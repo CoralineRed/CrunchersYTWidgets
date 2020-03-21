@@ -1,0 +1,11 @@
+{
+  "key": "product-control-widget",
+  "version": "0.0.1",
+  "name": "Product Control Widget",
+  "description": "Widget provides functionality for registering personal absences",
+  "author": "Hightech Group",
+  "products": {
+    "Hub": ">=2018.1",
+    "YouTrack": ">=2018.1"
+  }
+}
