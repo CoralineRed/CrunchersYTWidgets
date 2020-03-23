@@ -1,3 +1,5 @@
+import {addWorkItems} from "./youtrack-api";
+import DashboardAddons from "hub-dashboard-addons";
 
 let DEFAULT_TITLE = "Production Control Widget";
 let DEFAULT_VACATION = "HT_NA-14";
@@ -5,39 +7,42 @@ let DEFAULT_SICK_LEAVE = "HT_NA-15";
 let DEFAULT_SICK_DAY = "HT_NA-17";
 let DEFAULT_OWN_EXPENSE = "HT_NA-16";
 
-
 function renderForm(dashboardAPI) {
     dashboardAPI.readConfig().then(function (config) {
-        document.getElementById('error').innerText = '';
-        document.getElementById('vacation-option').value = config.vacationIssueId || DEFAULT_VACATION;
-        document.getElementById('sick-leave-option').value = config.sickLeaveIssueId || DEFAULT_SICK_LEAVE;
-        document.getElementById('sick-day-option').value = config.sickDayIssueId || DEFAULT_SICK_DAY;
-        document.getElementById('own-expense-option').value = config.ownExpenseIssueId || DEFAULT_OWN_EXPENSE;
+        document.getElementById('vacation-option').value = (config && config.vacationIssueId) || DEFAULT_VACATION;
+        document.getElementById('sick-leave-option').value = (config && config.sickLeaveIssueId) || DEFAULT_SICK_LEAVE;
+        document.getElementById('sick-day-option').value = (config && config.sickDayIssueId) || DEFAULT_SICK_DAY;
+        document.getElementById('own-expense-option').value = (config && config.ownExpenseIssueId) || DEFAULT_OWN_EXPENSE;
     });
 
     document.getElementById('track').onclick = function () {
         dashboardAPI.readConfig().then(function (config) {
-            if (config.token === "") {
-                document.getElementById('error').innerText = 'No token entered in settings';
-            } else {
-                let fromDate = Date.parse(document.getElementById('from').value)
-                let toDate = Date.parse(document.getElementById('to').value);
-                let missedDays = (toDate - fromDate) / (1000 * 3600 * 24);
-                let selectElement = document.querySelector('#leave-types');
-                let issueId = selectElement.options[selectElement.selectedIndex].getAttribute('value');
-                addWorkItems(`${location.host}/youtrack`, config.token, issueId, missedDays)
+                debugger
+                if (!config || config.token === "" || !config.token) {
+                    document.getElementById('error').value += 'Токен не введен в настройках';
+                } else {
+                    let fromDate = Date.parse(document.getElementById('from').value)
+                    let toDate = Date.parse(document.getElementById('to').value);
+                    let missedDays = (toDate - fromDate) / (1000 * 3600 * 24);
+                    let selectElement = document.querySelector('#leave-types');
+                    let issueId = selectElement.options[selectElement.selectedIndex].getAttribute('value');
+
+                    addWorkItems(`https://${location.host}/youtrack`, config.token, issueId, missedDays)
+                }
+
+
             }
+        );
 
-        });
 
-
-    };
+    }
+    ;
     document.getElementById('settings').hidden = true;
     document.getElementById('leave-form').hidden = false;
 }
 
 function renderSettings(dashboardAPI) {
-
+    debugger
     document.getElementById('settings').hidden = false;
     document.getElementById('leave-form').hidden = true;
 
@@ -69,6 +74,7 @@ function renderSettings(dashboardAPI) {
 
 function fillFieldsFromConfig(dashboardAPI) {
     dashboardAPI.readConfig().then(function (config) {
+        debugger
         document.getElementById('token').value = (config && config.token) || "";
         document.getElementById('title').value = (config && config.title) || DEFAULT_TITLE;
         document.getElementById('vacation').value = (config && config.vacationIssueId) || DEFAULT_VACATION;
@@ -78,8 +84,9 @@ function fillFieldsFromConfig(dashboardAPI) {
     });
 }
 
-Dashboard.registerWidget(function (dashboardAPI, registerWidgetAPI) {
+DashboardAddons.registerWidget(function (dashboardAPI, registerWidgetAPI) {
     renderForm(dashboardAPI);
+
     registerWidgetAPI({
         onConfigure: function () {
             fillFieldsFromConfig(dashboardAPI);

@@ -6,19 +6,9 @@
     <!-- Default styles of dashboard widgets -->
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/hub-dashboard-addons@latest/dashboard.css">
     <!-- Include dashboard connector from CDN -->
-    <script src="https://unpkg.com/hub-dashboard-addons@latest"></script>
+    <!--	<script src="https://unpkg.com/hub-dashboard-addons@latest"></script>-->
     <!-- Syntax highlighting for code blocks -->
     <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
-    <script>
-        function preload() {
-            let fromInput = document.getElementById('from');
-            fromInput.onchange = function () {
-                let fromDate = new Date(Date.parse(fromInput.value));
-                let toInput = document.getElementById('to');
-                toInput.setAttribute('min', fromDate.toISOString().split('T')[0]);
-            }
-        }
-    </script>
 </head>
 <body>
 <div id="settings" hidden="true">
@@ -79,16 +69,19 @@
         </div>
 
         <script>
-            preload();
+            (function preload() {
+                let fromInput = document.getElementById('from');
+                fromInput.onchange = function () {
+                    let fromDate = new Date(Date.parse(fromInput.value));
+                    let toInput = document.getElementById('to');
+                    toInput.setAttribute('min', fromDate.toISOString().split('T')[0]);
+                }
+            })()
         </script>
         <input type='submit' value='Track' id="track">
     </form>
     <p id="error"></p>
     <textarea id="debug"></textarea>
 </div>
-<script src="require.js"></script>
-<script src="index.js"></script>
-
-<script src="youtrack-api.js"></script>
 </body>
 </html>
