@@ -15,19 +15,25 @@ function renderForm(dashboardAPI) {
         document.getElementById('own-expense-option').value = (config && config.ownExpenseIssueId) || DEFAULT_OWN_EXPENSE;
     });
 
+
     document.getElementById('track').onclick = function () {
         dashboardAPI.readConfig().then(function (config) {
                 debugger
                 if (!config || config.token === "" || !config.token) {
-                    document.getElementById('error').value += 'Токен не введен в настройках';
+                    document.getElementById('error').innerText = 'Токен не введен в настройках';
                 } else {
                     let fromDate = Date.parse(document.getElementById('from').value)
                     let toDate = Date.parse(document.getElementById('to').value);
-                    let missedDays = (toDate - fromDate) / (1000 * 3600 * 24);
-                    let selectElement = document.querySelector('#leave-types');
-                    let issueId = selectElement.options[selectElement.selectedIndex].getAttribute('value');
+                    if (fromDate.toString() === 'NaN' || toDate.toString() === 'NaN') {
+                        document.getElementById('error').innerText = 'Введите дату';
+                    } else {
+                        document.getElementById('error').innerText='';
+                        let missedDays = (toDate - fromDate) / (1000 * 3600 * 24);
+                        let selectElement = document.querySelector('#leave-types');
+                        let issueId = selectElement.options[selectElement.selectedIndex].getAttribute('value');
+                        addWorkItems(`https://${location.host}/youtrack`, config.token, issueId, missedDays)
+                    }
 
-                    addWorkItems(`https://${location.host}/youtrack`, config.token, issueId, missedDays)
                 }
 
 
@@ -61,13 +67,15 @@ function renderSettings(dashboardAPI) {
             sickDayIssueId: sickDayIssueId,
             ownExpenseIssueId: ownExpenseIssueId
         });
+
         dashboardAPI.exitConfigMode();
         dashboardAPI.setTitle(title);
-        renderForm(dashboardAPI)
+        renderForm(dashboardAPI);
     };
 
     document.getElementById('cancel').onclick = function () {
         dashboardAPI.exitConfigMode();
+
         renderForm(dashboardAPI);
     };
 }

@@ -10,24 +10,25 @@ export const addWorkItems = (baseUrl, token, issueId, missedDays) => {
     };
 
     const youtrack = new Youtrack(config);
-    document.getElementById('debug').value += `${config.baseUrl} ${config.token} ${missedDays} ${issueId}`;
 
 
     let resultError = '';
+    let work = '';
     let addedWorkItems = 0;
+
     for (let i = 0; i < missedDays; i++) {
         youtrack.workItems.create(issueId, {
             duration: {
                 presentation: '1d'
             }
         }).then(workItem => {
+            work += `${workItem}\n`;
             addedWorkItems++;
         }).catch(error => {
             resultError += `Error acquired on adding ${i + 1} work item:\n${error}\n`;
         });
     }
 
-    resultError === ''
-        ? document.getElementById('error').value = `Отсутствие успешно отражено`
-        : document.getElementById('error').value = `${addedWorkItems} work items были успешно добавлены, произошли следующие ошибки\n${resultError}`;
+    //document.getElementById('debug').value = `${work}\n${JSON.stringify(youtrack)}\n${JSON.stringify(youtrack.workItems)}`;
+    document.getElementById('error').innerText = `${addedWorkItems} work items были успешно добавлены, произошли следующие ошибки\n${resultError}`;
 };
