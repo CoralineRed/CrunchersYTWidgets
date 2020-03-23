@@ -1,5 +1,3 @@
-const {Youtrack} = require('youtrack-rest-client');
-
 
 let DEFAULT_TITLE = "Production Control Widget";
 let DEFAULT_VACATION = "HT_NA-14";
@@ -8,9 +6,9 @@ let DEFAULT_SICK_DAY = "HT_NA-17";
 let DEFAULT_OWN_EXPENSE = "HT_NA-16";
 
 
-
 function renderForm(dashboardAPI) {
     dashboardAPI.readConfig().then(function (config) {
+        document.getElementById('error').innerText = '';
         document.getElementById('vacation-option').value = config.vacationIssueId || DEFAULT_VACATION;
         document.getElementById('sick-leave-option').value = config.sickLeaveIssueId || DEFAULT_SICK_LEAVE;
         document.getElementById('sick-day-option').value = config.sickDayIssueId || DEFAULT_SICK_DAY;
@@ -24,7 +22,7 @@ function renderForm(dashboardAPI) {
             } else {
                 let fromDate = Date.parse(document.getElementById('from').value)
                 let toDate = Date.parse(document.getElementById('to').value);
-                let missedDays = (fromDate - toDate) / (1000 * 3600 * 24);
+                let missedDays = (toDate - fromDate) / (1000 * 3600 * 24);
                 let selectElement = document.querySelector('#leave-types');
                 let issueId = selectElement.options[selectElement.selectedIndex].getAttribute('value');
                 addWorkItems(`${location.host}/youtrack`, config.token, issueId, missedDays)
