@@ -13,22 +13,32 @@ export const addWorkItems = (baseUrl, token, issueId, missedDays) => {
 
 
     let resultError = '';
-    let work = '';
-    let addedWorkItems = 0;
+    let returnedPromises = 0;
+    let promise = new Promise(function (resolve, reject) {
+        for (let i = 0; i < missedDays; i++) {
+            youtrack.workItems.create(issueId, {
+                duration: {
+                    presentation: '1d'
+                }
+            }).then(workItem => {
+                returnedPromises++;
+                if (returnedPromises === missedDays) {
+                    resolve('Отсутсвие успешно отражено.');
+                }
+            }).catch(error => {
+                returnedPromises++;
+                resultError += `Error acquired on adding ${i + 1} work item:\n${error.error.error}\n`;
+                if (returnedPromises === missedDays) {
+                    reject(resultError);
+                }
 
-    for (let i = 0; i < missedDays; i++) {
-        youtrack.workItems.create(issueId, {
-            duration: {
-                presentation: '1d'
-            }
-        }).then(workItem => {
-            work += `${workItem}\n`;
-            addedWorkItems++;
-        }).catch(error => {
-            resultError += `Error acquired on adding ${i + 1} work item:\n${error}\n`;
-        });
-    }
+            });
+        }
+    }).then(resultText => {
+            document.getElementById('error').innerText = `${resultText}`;
 
-    //document.getElementById('debug').value = `${work}\n${JSON.stringify(youtrack)}\n${JSON.stringify(youtrack.workItems)}`;
-    document.getElementById('error').innerText = `${addedWorkItems} work items были успешно добавлены, произошли следующие ошибки\n${resultError}`;
+        }
+    ).catch(err => {
+        document.getElementById('error').innerText = ` При треке отсутствия произошли следующие ошибки:\n${err}`;
+    });
 };
