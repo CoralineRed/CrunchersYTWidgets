@@ -1,44 +1,38 @@
-import {Youtrack} from "youtrack-rest-client";
+export const addWorkItems = (issueId, missedDays, fetch, serviceId) => {
 
-export const addWorkItems = (baseUrl, token, issueId, missedDays) => {
-    const config = {
-        /*perm:SGlraXJhbmdp.NTUtMg==.rTc6rtYs47KUCp9ktdZBE8F24b14FT*/
-        //'perm:cm9vdA==.NDctMA==.5w6zeB6Y3Ox2n5b2aho7343yrPs2hq'
-        //'https://crunchers.myjetbrains.com/youtrack'
-        baseUrl: baseUrl,
-        token: token
-    };
+    let minutesADay = '';
+    fetch(serviceId, 'rest/admin/timetracking').then(response => {
+        minutesADay = response.minutesADay;
+        let resultError = '';
+        let returnedPromises = 0;
+        let promise = new Promise(function (resolve, reject) {
+            for (let i = 0; i < missedDays; i++) {
+                fetch(serviceId, `rest/issue/${issueId}/timetracking/workitem`, {
+                    method: 'POST',
+                    body: {
+                        date: Date.now(),
+                        duration: minutesADay
+                    }
+                }).then(workItem => {
+                    returnedPromises++;
+                    if (returnedPromises === missedDays) {
+                        resolve('Отсутсвие успешно отражено.');
+                    }
+                }).catch(error => {
+                    returnedPromises++;
+                    resultError += `Error acquired on adding ${i + 1} work item:\n${JSON.stringify(error.data.value)}\n`;
+                    if (returnedPromises === missedDays) {
+                        reject(resultError);
+                    }
 
-    const youtrack = new Youtrack(config);
+                });
+            }
+        }).then(resultText => {
+                document.getElementById('error').innerText = `${resultText}`;
 
-
-    let resultError = '';
-    let returnedPromises = 0;
-    let promise = new Promise(function (resolve, reject) {
-        for (let i = 0; i < missedDays; i++) {
-            youtrack.workItems.create(issueId, {
-                duration: {
-                    presentation: '1d'
-                }
-            }).then(workItem => {
-                returnedPromises++;
-                if (returnedPromises === missedDays) {
-                    resolve('Отсутсвие успешно отражено.');
-                }
-            }).catch(error => {
-                returnedPromises++;
-                resultError += `Error acquired on adding ${i + 1} work item:\n${error.error.error}\n`;
-                if (returnedPromises === missedDays) {
-                    reject(resultError);
-                }
-
-            });
-        }
-    }).then(resultText => {
-            document.getElementById('error').innerText = `${resultText}`;
-
-        }
-    ).catch(err => {
-        document.getElementById('error').innerText = ` При треке отсутствия произошли следующие ошибки:\n${err}`;
-    });
+            }
+        ).catch(err => {
+            document.getElementById('error').innerText = ` При треке отсутствия произошли следующие ошибки:\n${err}`;
+        });
+    }).catch(response => document.getElementById('error').innerText = JSON.stringify(response))
 };

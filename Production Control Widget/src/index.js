@@ -6,6 +6,7 @@ let DEFAULT_VACATION = "HT_NA-14";
 let DEFAULT_SICK_LEAVE = "HT_NA-15";
 let DEFAULT_SICK_DAY = "HT_NA-17";
 let DEFAULT_OWN_EXPENSE = "HT_NA-16";
+let SERVICE_ID = "";
 
 function renderForm(dashboardAPI) {
     dashboardAPI.readConfig().then(function (config) {
@@ -27,11 +28,11 @@ function renderForm(dashboardAPI) {
                     if (fromDate.toString() === 'NaN' || toDate.toString() === 'NaN') {
                         document.getElementById('error').innerText = 'Введите дату';
                     } else {
-                        document.getElementById('error').innerText='';
+                        document.getElementById('error').innerText = '';
                         let missedDays = (toDate - fromDate) / (1000 * 3600 * 24);
                         let selectElement = document.querySelector('#leave-types');
                         let issueId = selectElement.options[selectElement.selectedIndex].getAttribute('value');
-                        addWorkItems(`https://${location.host}/youtrack`, config.token, issueId, missedDays)
+                        addWorkItems(issueId, missedDays, dashboardAPI.fetch.bind(dashboardAPI), SERVICE_ID)
                     }
 
                 }
@@ -94,6 +95,11 @@ function fillFieldsFromConfig(dashboardAPI) {
 
 DashboardAddons.registerWidget(function (dashboardAPI, registerWidgetAPI) {
     renderForm(dashboardAPI);
+    dashboardAPI.fetchHub('api/rest/services').then(response => SERVICE_ID = response.services[0].id);
+    /*dashboardAPI.fetchHub('api/rest/services')
+        .then(response => document.getElementById('debug').value = JSON.stringify(response));*/
+    /*dashboardAPI.fetch('3261941e-e956-4275-aa7b-9087560063b1', 'api/users')
+        .then(response => document.getElementById('debug').value = JSON.stringify(response));*/
 
     registerWidgetAPI({
         onConfigure: function () {
