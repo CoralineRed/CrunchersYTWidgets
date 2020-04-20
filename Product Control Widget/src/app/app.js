@@ -5,20 +5,20 @@ import {render} from 'react-dom';
 import Select from '@jetbrains/ring-ui/components/select/select';
 import Panel from '@jetbrains/ring-ui/components/panel/panel';
 import Button from '@jetbrains/ring-ui/components/button/button';
-
+import trashIcon from '@jetbrains/icons/trash.svg';
 import './app.css';
-import {Input} from "@jetbrains/ring-ui/components/input/input";
 import DatePicker from "@jetbrains/ring-ui/components/date-picker/date-picker";
 import Alert, {Container} from "@jetbrains/ring-ui/components/alert/alert";
-import ErrorBubble from "@jetbrains/ring-ui/components/error-bubble/error-bubble";
+import Text from "@jetbrains/ring-ui/components/text/text";
+import Icon from "@jetbrains/ring-ui/components/icon";
+import {Grid} from "@jetbrains/ring-ui";
+import Row from "@jetbrains/ring-ui/components/grid/row";
+import Col from "@jetbrains/ring-ui/components/grid/col";
+import Input from "@jetbrains/ring-ui/components/input/input";
 
-
-const DEFAULT_VACATION = "HT_NA-14";
-const DEFAULT_SICK_LEAVE = "HT_NA-15";
-const DEFAULT_SICK_DAY = "HT_NA-17";
-const DEFAULT_OWN_EXPENSE = "HT_NA-16";
-const DEFAULT_TITLE = "Product Control Widget";
+const DEFAULT_TITLE = "Отметить отсутствие";
 let serviceId = "";
+let workTypes = [];
 
 class Widget extends Component {
   static propTypes = {
@@ -31,8 +31,11 @@ class Widget extends Component {
     const {registerWidgetApi, dashboardApi} = props;
 
     this.state = {
+      selectedLeave: null,
       isConfiguring: false,
-      alerts: []
+      alerts: [],
+      settingsAlerts: [],
+      vacations: []
     };
 
     registerWidgetApi({
@@ -48,22 +51,20 @@ class Widget extends Component {
         return;
       }
       this.setState({
-        vacation: config.vacation,
-        sickLeave: config.sickLeave,
-        sickDay: config.sickDay,
-        ownExpense: config.ownExpense,
+        vacations: config.vacations,
+        workType: config.workType,
+        issueId: config.issueId,
         title: config.title
       });
     });
   }
 
   saveConfig = async () => {
-    const {vacation, sickLeave, sickDay, ownExpense, title} = this.state;
+    const {workType, issueId, title, vacations} = this.state;
     await this.props.dashboardApi.storeConfig({
-      vacation,
-      sickLeave,
-      sickDay,
-      ownExpense,
+      vacations,
+      workType,
+      issueId,
       title
     });
     this.setState({isConfiguring: false});
@@ -74,17 +75,11 @@ class Widget extends Component {
     await this.props.dashboardApi.exitConfigMode();
     this.initialize(this.props.dashboardApi);
   };
-  changeVacation = e => this.setState({
-    vacation: e.target.value
+  changeWorkType = workType => this.setState({
+    workType
   });
-  changeSickLeave = e => this.setState({
-    sickLeave: e.target.value
-  });
-  changeSickDay = e => this.setState({
-    sickDay: e.target.value
-  });
-  changeOwnExpense = e => this.setState({
-    ownExpense: e.target.value
+  changeIssueId = e => this.setState({
+    issueId: e.target.value
   });
   changeTitle = e => this.setState({
     title: e.target.value
@@ -94,8 +89,52 @@ class Widget extends Component {
   };
   changeOption = selectedLeave => this.setState({selectedLeave});
 
+  addItem = () => {
+    let {workType, issueId, vacations} = this.state;
+    if (!workType || !issueId) {
+      let newAlerts = this.state.settingsAlerts;
+      newAlerts.push({
+        type: Alert.Type.ERROR,
+        key: `${Date.now()}`,
+        message: `Выберите work type и введите issue id`
+      });
+      this.setState({settingsAlerts: newAlerts})
+
+    } else {
+      if (!vacations.filter(x => x.label === workType.label)[0]) {
+
+        vacations.push({key: issueId, label: workType.label});
+        this.setState({vacations});
+
+      } else {
+        let newAlerts = this.state.settingsAlerts;
+        newAlerts.push({
+          type: Alert.Type.ERROR,
+          key: `${Date.now()}`,
+          message: `Данный work type уже присутствует в списке`
+        });
+        this.setState({settingsAlerts: newAlerts})
+      }
+    }
+
+
+  };
+  deleteItem = (label) => {
+    let {vacations, selectedLeave} = this.state;
+    if (selectedLeave !== null && label === selectedLeave.label) {
+      this.setState({selectedLeave: null})
+    }
+    this.setState({vacations: vacations.filter(x => x.label !== label)});
+  };
+
+  /*inputChange = e=>(label)=>{
+    let vacations = this.state.vacations;
+    let a = vacations.filter(x=>x.label===label)[0];
+    a.key=e.target.value;
+    this.setState({vacations});
+  }*/
   renderConfiguration() {
-    const {vacation, sickLeave, sickDay, ownExpense, title} = this.state;
+    const {workType, issueId, title, vacations} = this.state;
 
     return (
       <div className="widget">
@@ -103,36 +142,86 @@ class Widget extends Component {
           label="Название виджета"
           onChange={this.changeTitle}
           value={title ?? DEFAULT_TITLE}
-
-        />
-        <Input
-          label="id карточки отпуска"
-          onChange={this.changeVacation}
-          value={vacation ?? DEFAULT_VACATION}
-        />
-        <Input
-          label="id карточки болезни"
-          onChange={this.changeSickLeave}
-          value={sickLeave ?? DEFAULT_SICK_LEAVE}
-        />
-        <Input
-          label="id карточки сикдэя"
-          onChange={this.changeSickDay}
-          value={sickDay ?? DEFAULT_SICK_DAY}
-        />
-        <Input
-          label="id карточки ухода за свой счет"
-          onChange={this.changeOwnExpense}
-          value={ownExpense ?? DEFAULT_OWN_EXPENSE}
         />
         <Panel>
-          <Button primary onClick={this.saveConfig}>{'Save'}</Button>
-          <Button onClick={this.cancelConfig}>{'Cancel'}</Button>
+          <Grid>
+            {vacations.map(x =>
+              <div key={JSON.stringify(x)}>
+                <Row>
+                  <Col xs={4} sm={4} md={6} lg={3}>
+                    <div className="cell">{x.label}</div>
+                  </Col>
+                  <Col xs={4} sm={8} md={6} lg={3}>
+                    <div className="cell">{x.key}</div>
+                  </Col>
+                  <Col xs={4} smOffset={4} sm={8} md={12} lg={6}>
+                    <div className="cell"><Button onClick={() => this.deleteItem(x.label)}> <Icon
+                      glyph={trashIcon}
+                      className="ring-icon"
+                      color={Icon.Color.RED}
+                    />️</Button></div>
+                  </Col>
+                </Row>
+              </div>)}
+          </Grid>
         </Panel>
+        <Panel>
+          <Text>{"Work type"}</Text>
+          <br/>
+          <Select
+            data={workTypes}
+            selected={workType}
+            onChange={this.changeWorkType}
+            label={"Work type"}
+          />
+
+          <Input
+            label={"Issue id"}
+            onChange={this.changeIssueId}
+            value={issueId}
+          />
+
+          <Button onClick={this.addItem}>{'Добавить пару'}</Button>
+        </Panel>
+
+        <Panel>
+          <Button primary onClick={this.saveConfig}>{'Сохранить'}</Button>
+          <Button onClick={this.cancelConfig}>{'Отменить'}</Button>
+        </Panel>
+        <div>
+          <Container>
+            {this.state.settingsAlerts.map(alert => {
+              const {message, key, type, isClosing} = alert;
+              return (
+                <Alert
+                  key={key}
+                  type={type}
+                  isClosing={isClosing}
+                  onCloseRequest={() => this.onCloseSettingsAlertClick(alert)}
+                  onClose={() => this.onCloseSettingsAlert(alert)}
+                >
+                  {message}
+                </Alert>
+              );
+            })}
+          </Container>
+        </div>
       </div>
     );
   }
 
+  onCloseSettingsAlert = closedAlert => {
+    this.setState(prevState => ({
+      settingsAlerts: prevState.settingsAlerts.filter(alert => alert !== closedAlert)
+    }));
+  };
+  onCloseSettingsAlertClick = alert => {
+    const alertToClose = this.state.settingsAlerts.filter(it => alert.key === it.key)[0];
+    alertToClose.isClosing = true;
+    this.setState({
+      settingsAlerts: this.state.settingsAlerts
+    });
+  };
   onCloseAlert = closedAlert => {
     this.setState(prevState => ({
       alerts: prevState.alerts.filter(alert => alert !== closedAlert)
@@ -148,41 +237,24 @@ class Widget extends Component {
   };
 
   render() {
-    const {title, ownExpense, sickDay, sickLeave, vacation, selectedLeave, from, to, isConfiguring} = this.state;
+    const {title, vacations, selectedLeave, from, to, isConfiguring} = this.state;
 
     this.props.dashboardApi.setTitle(title ?? DEFAULT_TITLE);
 
     if (isConfiguring) {
       return this.renderConfiguration();
     }
-    let selectData = [];
-    vacation ? selectData.push({key: vacation, label: 'Отпуск'}) : selectData.push({
-      key: DEFAULT_VACATION,
-      label: 'Отпуск'
-    });
-    sickLeave ? selectData.push({key: sickLeave, label: 'Болезнь'}) : selectData.push({
-      key: DEFAULT_SICK_LEAVE,
-      label: 'Болезнь'
-    });
-    sickDay ? selectData.push({key: sickDay, label: 'Сикдэй'}) : selectData.push({
-      key: DEFAULT_SICK_DAY,
-      label: 'Сикдэй'
-    });
-    ownExpense ? selectData.push({key: ownExpense, label: 'За свой счет'}) : selectData.push({
-      key: DEFAULT_OWN_EXPENSE,
-      label: 'За свой счет'
-    });
-    selectedLeave ? selectedLeave.key = selectData.filter(x => x.label === selectedLeave.label)[0].key : {};
 
     return (
       <div className="widget">
-        <div><DatePicker anchor = 's' from={from} to={to} onChange={this.setRange} range/></div>
+
+        <div><DatePicker rangePlaceholder={"Выберите период"} from={from} to={to} onChange={this.setRange} range/></div>
         <div>
           <Select
-            data={selectData}
+            data={vacations}
             selected={selectedLeave}
             onChange={this.changeOption}
-            label="Выберети тип отсутствия"
+            label="Выберите тип отсутствия"
           />
         </div>
         <br/>
@@ -212,63 +284,67 @@ class Widget extends Component {
     );
   }
 
-  addWorkItems = (issueId, missedDays, serviceId) => {
-    let minutesADay = '';
-    let dashboardApi=this.props.dashboardApi;
-    dashboardApi.fetch(serviceId, 'rest/admin/timetracking').then(response => {
-      minutesADay = response.minutesADay;
-      let resultError = '';
-      let returnedPromises = 0;
+  getDate = (dateString)=>
+  {
+    let date = new Date(dateString);
+    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
+  };
 
-      let promise = new Promise(function (resolve, reject) {
-        for (let i = 0; i < missedDays; i++) {
-          dashboardApi.fetch(serviceId, `rest/issue/${issueId}/timetracking/workitem`, {
-            method: 'POST',
-            body: {
-              date: Date.now(),
-              duration: minutesADay
-            }
-          }).then(workItem => {
-            returnedPromises++;
-            if (returnedPromises === missedDays) {
-              resolve('Отсутсвие успешно отражено.');
-            }
-          }).catch(error => {
-            returnedPromises++;
-            resultError += `Error acquired on adding ${i + 1} work item:\n${JSON.stringify(error.data.value)}\n`;
-            if (returnedPromises === missedDays) {
-              reject(resultError);
-            }
-
-          });
+  addWorkItems = async (issueId, serviceId, workType, from, to) => {
+    let wstate = this;
+    const minutesADay = 8 * 60;
+    let dashboardApi = this.props.dashboardApi;
+    let workItemDate = this.getDate(from);
+    let toDate = this.getDate(to);
+    toDate.setDate(toDate.getDate() + 1);
+    let resultError = '';
+    let newAlerts = this.state.alerts;
+    let loadingAlert = {
+      type: Alert.Type.LOADING,
+      key: `${Date.now()}`,
+      message: `Идет трек отсутствия...`,
+      isClosing: false
+    };
+    newAlerts.push(loadingAlert);
+    this.setState({alerts: newAlerts});
+    do {
+      /*newAlerts.push({type: Alert.Type.WARNING, key: `${Date.now()}`, message: `${workItemDate}`});
+      wstate.setState({alerts: newAlerts});*/
+      await dashboardApi.fetch(serviceId, `rest/issue/${issueId}/timetracking/workitem`, {
+        method: 'POST',
+        body: {
+          date: Date.parse(workItemDate),
+          duration: minutesADay,
+          worktype: {
+            name: workType
+          }
         }
-      }).then(resultText => {
-          let newAlerts = this.state.alerts;
-          newAlerts.push({
-            type: Alert.Type.SUCCESS,
-            key: `${Date.now()}`,
-            message: `${resultText}`
-          });
-          this.setState({alerts: newAlerts})
-        }
-      ).catch(err => {
-        let newAlerts = this.state.alerts;
-        newAlerts.push({
-          type: Alert.Type.ERROR,
-          key: `${Date.now()}`,
-          message: `При треке отстуствия призошли следующие ошибки:${err}`
-        });
-        this.setState({alerts: newAlerts})
+      }).then(workItem => {
+      }).catch(error => {
+        resultError += `Error acquired on adding work item:\n${JSON.stringify(error)}\n`;
       });
-    }).catch(response => {
-      let newAlerts = this.state.alerts;
+      workItemDate.setDate(workItemDate.getDate() + 1);
+    } while (workItemDate.toString() !== toDate.toString());
+
+    if (resultError === "") {
+      loadingAlert.isClosing = true;
+      this.setRange({from: null, to: null});
+      this.changeOption(null);
+      newAlerts.push({
+        type: Alert.Type.SUCCESS,
+        key: `${Date.now()}`,
+        message: `${'Отсутствие успешно отражено.'}`
+      });
+      this.setState({alerts: newAlerts});
+    } else {
+      loadingAlert.isClosing = true;
       newAlerts.push({
         type: Alert.Type.ERROR,
         key: `${Date.now()}`,
-        message: {response}
+        message: `При треке отсутствия произошли следующие ошибки:${resultError}`
       });
       this.setState({alerts: newAlerts})
-    })
+    }
   };
   track = () => {
     const {from, to, selectedLeave} = this.state;
@@ -290,8 +366,7 @@ class Widget extends Component {
         });
         this.setState({alerts: newAlerts})
       } else {
-        let missedDays = (Date.parse(to) - Date.parse(from)) / (1000 * 3600 * 24);
-        this.addWorkItems(selectedLeave.key, missedDays, serviceId);
+        this.addWorkItems(selectedLeave.key, serviceId, selectedLeave.label, from, to);
       }
     }
   };
@@ -299,7 +374,13 @@ class Widget extends Component {
 }
 
 DashboardAddons.registerWidget((dashboardApi, registerWidgetApi) => {
-    dashboardApi.fetchHub('api/rest/services').then(response => serviceId = response.services[0].id);
+    dashboardApi.fetchHub('api/rest/services').then(response => {
+      serviceId = response.services.filter(x => x.id !== '0-0-0-0-0')[0].id;
+      dashboardApi.fetch(serviceId, 'rest/admin/timetracking/worktype').then(response => workTypes = response.map(x => {
+        return {label: x.name, key: x.name}
+      }));
+    });
+
     render(
       <Widget
         dashboardApi={dashboardApi}
