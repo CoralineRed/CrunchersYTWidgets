@@ -47,7 +47,7 @@ namespace ProductionControlWidgetServer
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints => { endpoints.MapControllerRoute("DefaultRoute", "api/{controller}/{action}/{id?}"); });
         }
     }
 }
