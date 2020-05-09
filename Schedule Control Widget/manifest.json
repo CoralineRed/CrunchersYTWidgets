@@ -1,0 +1,15 @@
+{
+  "key": "schedule-control-widget",
+  "name": "Schedule Control Widget",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Hightech Group",
+  "dependencies": {
+    "Hub": ">=2018.2",
+    "YouTrack": ">=2018.2"
+  },
+  "products": {
+    "Hub": "2018.2",
+    "YouTrack": "2018.2"
+  }
+}
