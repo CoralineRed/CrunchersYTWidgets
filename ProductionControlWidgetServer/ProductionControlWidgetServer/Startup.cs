@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProductionControlWidgetServer.HubInteraction;
+using ProductionControlWidgetServer.OneCInteraction;
 
 namespace ProductionControlWidgetServer
 {
@@ -26,9 +27,11 @@ namespace ProductionControlWidgetServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var serverUrl = Configuration["serverUrl"];
-            var bearerToken = Configuration["bearerToken"];
-            services.AddTransient<HubConnection>(x => new HubConnection(serverUrl, bearerToken));
+            services.AddScoped(x => new HubConnection(
+                Configuration["Hub:serverUrl"], Configuration["Hub:bearerToken"]));
+            services.AddScoped(x => new OneCConnection(
+                Configuration["Hub:serverUrl"], Configuration["Hub:basicToken"]));
+            
             services.AddControllers();
         }
 
@@ -47,7 +50,10 @@ namespace ProductionControlWidgetServer
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllerRoute("DefaultRoute", "api/{controller}/{action}/{id?}"); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute("DefaultRoute", "api/{controller}/{action}/{id?}");
+            });
         }
     }
 }
