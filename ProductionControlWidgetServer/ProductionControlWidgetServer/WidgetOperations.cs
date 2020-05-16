@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using ProductionControlWidgetServer.HubInteraction;
+using ProductionControlWidgetServer.HubInteraction.Users;
 using ProductionControlWidgetServer.Models;
 using ProductionControlWidgetServer.OneCInteraction;
 
@@ -35,40 +36,56 @@ namespace ProductionControlWidgetServer
 
         public async Task<WidgetResponseModel> Api1CRequest(string[] emails, Period[] periods)
         {
-            _oneCConnection.
-            
-            var rnd = new Random();
-            var users = emails.Select(email =>
-            {
-                var user = new ResponseLine() {Email = email};
-                user.Periods = periods.Select(period => new PeriodWithPlan()
-                    {From = period.From, To = period.To, Plan = rnd.Next(1, 70)}).ToArray();
-                return user;
-            }).ToArray();
-            return new WidgetResponseModel() {Users = users};
-            //TODO: сделать запрос к 1с
-        }
+            var oneCService = _oneCConnection.CreateOneCService();
 
-        class OneCService
-        {
-            private readonly OneCConnection _connection;
+            var newPeriods = periods
+                .Select(x => (Period: x,
+                    Dates: (From: DateTimeOffset.Parse(x.From).DateTime, To: DateTimeOffset.Parse(x.To).DateTime)))
+                .ToList();
 
-            public OneCService(OneCConnection connection)
-            {
-                _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            }
+            var employees = await oneCService.GetEmployeesAsync();
+            var schedules = (await oneCService.GetSchedulesAsync(newPeriods
+                    .Select(x => x.Dates).ToList()))
+                .GroupBy(x => (x.ВремяНачала.Date, x.ГрафикРаботы_Key) )
+                .Select(x =>
+                    (Hours: x.Select(y => y.ЧасыРаботы).Aggregate(0, (a, b) => a + b),
+                        x.Key.Date,
+                        ScheduleKey: x.Key.ГрафикРаботы_Key));
 
-            public async Task GetEmployees()
+            return new WidgetResponseModel
             {
-                var client = _connection.GetAuthenticatedHttpClient();
-                var employees = await client.GetAsync($"Catalog_Сотрудники?$expand=Физлица&$select=Red_Key,,ВремяОкончания,ГрафикРаботы_Key&$filter=ВремяНачала ge datetime'2019-12-30T00:00:00'");
-                var
-            }
-
-            public async Task GetSchedules()
-            {
-                
-            }
+                Users = (from employeeEmail in from email in emails
+                            join employee in employees
+                                on email equals employee.Email into employee
+                            from employeeEmail in employee.DefaultIfEmpty()
+                            select (Email: email, ScheduleKey: employeeEmail?.ScheduleKey ?? Guid.Empty)
+                        join schedule in schedules
+                            on employeeEmail.ScheduleKey equals schedule.ScheduleKey into employee
+                        from employeeSchedule in employee.DefaultIfEmpty()
+                        select new
+                        {
+                            employeeEmail.Email,
+                            employeeSchedule.Date,
+                            employeeSchedule.Hours
+                        })
+                    .GroupBy(x => x.Email)
+                    .Select(group => new ResponseLine()
+                    {
+                        Email = group.Key,
+                        Periods = newPeriods
+                            .Select(period => new PeriodWithPlan
+                            {
+                                From = period.Period.From,
+                                To = period.Period.To,
+                                Plan = group
+                                    .Where(x => x.Date >= period.Dates.From && x.Date <= period.Dates.To)
+                                    .Select(x => x.Hours)
+                                    .Aggregate(0, (x, y) => x + y)
+                            })
+                            .ToArray()
+                    })
+                    .ToArray()
+            };
         }
     }
 }

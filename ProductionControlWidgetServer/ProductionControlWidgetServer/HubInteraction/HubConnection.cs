@@ -39,22 +39,12 @@ namespace ProductionControlWidgetServer.HubInteraction
 
         private readonly Action<HttpClientHandler> _configureHandler;
 
-        private static string EnsureTrailingSlash(string url)
-        {
-            if (!url.EndsWith("/"))
-            {
-                return url + "/";
-            }
-
-            return url;
-        }
-
         public HubConnection(string serverUrl, string bearerToken, Action<HttpClientHandler> configureHandler = null)
         {
             _bearerToken = bearerToken;
             _configureHandler = configureHandler;
             if (string.IsNullOrEmpty(serverUrl)
-                || !Uri.TryCreate(EnsureTrailingSlash(serverUrl), UriKind.Absolute, out var serverUri))
+                || !Uri.TryCreate(UriHelper.EnsureTrailingSlash(serverUrl), UriKind.Absolute, out var serverUri))
             {
                 throw new ArgumentException(nameof(serverUrl));
             }

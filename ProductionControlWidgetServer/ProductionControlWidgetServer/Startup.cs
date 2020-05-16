@@ -30,7 +30,7 @@ namespace ProductionControlWidgetServer
             services.AddScoped(x => new HubConnection(
                 Configuration["Hub:serverUrl"], Configuration["Hub:bearerToken"]));
             services.AddScoped(x => new OneCConnection(
-                Configuration["Hub:serverUrl"], Configuration["Hub:basicToken"]));
+                Configuration["1C:serverUrl"], Configuration["1C:basicToken"]));
             
             services.AddControllers();
         }

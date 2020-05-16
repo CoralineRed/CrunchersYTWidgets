@@ -45,7 +45,8 @@ namespace ProductionControlWidgetServer.OneCInteraction
             _basicToken = basicToken;
             _configureHandler = configureHandler;
 
-            if (string.IsNullOrEmpty(serverUrl) || !Uri.TryCreate(serverUrl, UriKind.Absolute, out var uri))
+            if (string.IsNullOrEmpty(serverUrl) ||
+                !Uri.TryCreate(UriHelper.EnsureTrailingSlash(serverUrl), UriKind.Absolute, out var uri))
             {
                 throw new ArgumentException(nameof(serverUrl));
             }
@@ -58,7 +59,7 @@ namespace ProductionControlWidgetServer.OneCInteraction
             // Initialize HTTP client
             if (_httpClient == null)
             {
-                var handler = new HubBearerTokenHttpClientHandler(_basicToken);
+                var handler = new OneCBasicTokenHttpClientHandler(_basicToken);
 
                 _configureHandler?.Invoke(handler);
 
