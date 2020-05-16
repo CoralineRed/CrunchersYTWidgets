@@ -27,11 +27,10 @@ namespace ProductionControlWidgetServer
             return await _hubConnection.CreateHubRolesService().IsManager(roleIds);
         }
 
-        public async Task<bool> RequestsOnlyHimself(string[] requestEmails, string userId)
+        public async Task<string> GetUserEmail(string userId)
         {
             var user = await _hubConnection.CreateHubUserService().GetUser(userId);
-            var userEmail = user.Profile.Email.UserEmail;
-            return requestEmails.All(reqEmail => reqEmail == userEmail);
+            return user.Profile.Email.UserEmail;
         }
 
         public async Task<WidgetResponseModel> Api1CRequest(string[] emails, Period[] periods)
