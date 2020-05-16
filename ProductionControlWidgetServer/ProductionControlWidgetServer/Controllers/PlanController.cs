@@ -31,8 +31,8 @@ namespace ProductionControlWidgetServer.Controllers
         public async Task<IActionResult> Periods([FromBody] WidgetRequestModel request)
         {
             var widgetOperations = new WidgetOperations(_hubConnection, _oneCConnection);
-            /*var isManager = await widgetOperations.IsManager(request.UserId);
-            if (isManager || await widgetOperations.RequestsOnlyHimself(request.Emails, request.UserId))*/
+            var isManager = await widgetOperations.IsManager(request.UserId);
+            if (isManager || await widgetOperations.RequestsOnlyHimself(request.Emails, request.UserId))
                 return Ok(await widgetOperations.Api1CRequest(request.Emails, request.Periods));
             return Unauthorized("");
         }
