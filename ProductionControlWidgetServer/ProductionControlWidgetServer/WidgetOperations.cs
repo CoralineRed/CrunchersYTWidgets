@@ -64,8 +64,8 @@ namespace ProductionControlWidgetServer
                         select new
                         {
                             employeeEmail.Email,
-                            employeeSchedule?.Date ?? DateTime.MinValue, 
-                            employeeSchedule?.Hours ?? 0
+                            employeeSchedule.Date, 
+                            employeeSchedule.Hours
                         })
                     .GroupBy(x => x.Email)
                     .Select(group => new ResponseLine()
