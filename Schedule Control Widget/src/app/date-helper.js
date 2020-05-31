@@ -27,3 +27,20 @@ export const periodsData = [
     {label: "Вчера", getPeriod: getYesterdayPeriod},
     {label: "Эта неделя", getPeriod: getCurrWeekPeriod}
 ];
+export const getDateLabel = (fromDate, toDate) => {
+    return `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
+};
+export const getPeriodsArray = (periodsLabels) => {
+    return periodsLabels.map(periodLabel => {
+        const periodFromData = periodsData.filter(period => period.label === periodLabel)[0];
+        if (periodFromData) {
+            return periodFromData
+        }
+        const fromTo = periodLabel.split('-').map(splitDatePart => {
+            const dateComponents = splitDatePart.trim().split('.');
+            return new Date(`${dateComponents[2]}-${dateComponents[1]}-${dateComponents[0]}`)
+        });
+        return {label: periodLabel,getPeriod:()=>getFromToDateObj(fromTo[0],fromTo[1])}
+
+    })
+};

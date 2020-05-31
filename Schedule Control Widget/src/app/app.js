@@ -3,8 +3,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {default as ReactDOM, render} from 'react-dom';
 import './app.css';
-import ManagerWidget from "./manager-widget";
-import SelfControlWidget from "./self-control-widget";
+import ReportWidget from "./reportWidget";
 import Alert, {Container} from "@jetbrains/ring-ui/components/alert/alert";
 
 const jetbrainsReadUserPermissionKey = "jetbrains.jetpass.user-read";
@@ -17,10 +16,27 @@ export default class Widget extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {isManager: false, didMount: false, alerts: [], userId: ""};
+        this.state = {
+            isManagersWidget: false,
+            isExistingWidget: false,
+            isManager: false,
+            didMount: false,
+            alerts: [],
+            userId: ""
+        };
     }
 
     async componentDidMount() {
+        const config = await this.props.dashboardApi.readConfig();
+        if (config) {
+            if (config.isManagersWidget) {
+                this.setState({isManagersWidget: true})
+            }
+            console.log("before set", config)
+            this.setState({isExistingWidget: true})
+        }
+
+
         const {dashboardApi} = this.props;
         let myRoles = [];
         let roles = [];
@@ -28,10 +44,12 @@ export default class Widget extends Component {
         await dashboardApi.fetchHub("rest/users/me")
             .then(user => {
                 myUserId = user.id;
-                myRoles = [...new Set([].concat(user.projectRoles, user.transitiveProjectRoles, user.sourcedProjectRoles).map(role => role.role.key))]
+                myRoles = user.projectRoles && user.transitiveProjectRoles && user.sourcedProjectRoles
+                    ? [...new Set([].concat(user.projectRoles, user.transitiveProjectRoles, user.sourcedProjectRoles).map(role => role.role.key))]
+                    : null
             })
             .catch(err => {
-                this.throwAlert(JSON.stringify(err), Alert.Type.ERROR)
+                this.throwAlert("При загрузке типа на запрос 'rest/users/me'", Alert.Type.ERROR)
             });
         await dashboardApi.fetchHub("rest/roles")
             .then(rolesPage => roles = rolesPage.roles
@@ -41,9 +59,13 @@ export default class Widget extends Component {
                 .filter(role => role.permissions.includes(jetbrainsReadUserPermissionKey))
                 .map(role => role.key))
             .catch(err => {
-                this.throwAlert(JSON.stringify(err), Alert.Type.ERROR)
+                this.throwAlert("При загрузке типа на запрос 'rest/roles'", Alert.Type.ERROR)
             });
-        this.setState({isManager: myRoles.some(role => roles.includes(role)), didMount: true, userId: myUserId})
+        this.setState({
+            isManager: myRoles ? myRoles.some(role => roles.includes(role)) : false,
+            didMount: true,
+            userId: myUserId
+        })
     }
 
     onCloseAlert = closedAlert => {
@@ -76,7 +98,12 @@ export default class Widget extends Component {
     };
 
     render() {
-        const {isManager, didMount} = this.state;
+        const {isManager, didMount, isExistingWidget} = this.state;
+
+        let isManagersWidget = this.state.isManagersWidget
+        if (!isManagersWidget && isManager && !isExistingWidget) {
+            isManagersWidget = true;
+        }
 
         if (!didMount) {
             return <div className="widget">
@@ -101,81 +128,40 @@ export default class Widget extends Component {
                 </div>
             </div>
         }
-        if (isManager) {
-            return <div className="widget">
-                <ManagerWidget
-                    dashboardApi={this.props.dashboardApi}
-                    registerWidgetApi={this.props.registerWidgetApi}
-                    throwAlert={this.throwAlert.bind(this.state)}
-                    closeAlert={this.closeAlert.bind(this.state)}
-                    userId={this.state.userId}
-                />
-                <div>
-                    <Container>
-                        {this.state.alerts.map(alert => {
-                            const {message, key, type, isClosing} = alert;
-                            return (
-                                <Alert
-                                    key={key}
-                                    type={type}
-                                    isClosing={isClosing}
-                                    onCloseRequest={() => this.onCloseAlertClick(alert)}
-                                    onClose={() => this.onCloseAlert(alert)}
-                                >
-                                    {message}
-                                </Alert>
-                            );
-                        })}
-                    </Container>
-                </div>
+        return <div className="widget">
+            <ReportWidget
+                dashboardApi={this.props.dashboardApi}
+                registerWidgetApi={this.props.registerWidgetApi}
+                throwAlert={this.throwAlert.bind(this.state)}
+                closeAlert={this.closeAlert.bind(this.state)}
+                userId={this.state.userId}
+                isManager={isManager}
+                isManagersWidget={isManagersWidget}
+                isExistingWidget={isExistingWidget}
+            />
+            <div>
+                <Container>
+                    {this.state.alerts.map(alert => {
+                        const {message, key, type, isClosing} = alert;
+                        return (
+                            <Alert
+                                key={key}
+                                type={type}
+                                isClosing={isClosing}
+                                onCloseRequest={() => this.onCloseAlertClick(alert)}
+                                onClose={() => this.onCloseAlert(alert)}
+                            >
+                                {message}
+                            </Alert>
+                        );
+                    })}
+                </Container>
             </div>
-        }
-        return (
-            <div className="widget">
-                <SelfControlWidget
-                    dashboardApi={this.props.dashboardApi}
-                    registerWidgetApi={this.props.registerWidgetApi}
-                    throwAlert={this.throwAlert.bind(this.state)}
-                    closeAlert={this.closeAlert.bind(this.state)}
-                    userId={this.state.userId}
-                />
-
-                <div>
-                    <Container>
-                        {this.state.alerts.map(alert => {
-                            const {message, key, type, isClosing} = alert;
-                            return (
-                                <Alert
-                                    key={key}
-                                    type={type}
-                                    isClosing={isClosing}
-                                    onCloseRequest={() => this.onCloseAlertClick(alert)}
-                                    onClose={() => this.onCloseAlert(alert)}
-                                >
-                                    {message}
-                                </Alert>
-                            );
-                        })}
-                    </Container>
-                </div>
-            </div>
-        );
+        </div>
     }
 }
 
 DashboardAddons.registerWidget((dashboardApi, registerWidgetApi) => {
-        registerWidgetApi({
-            onRefresh: () => {
-                ReactDOM.unmountComponentAtNode(document.getElementById('app-container'));
-                render(
-                    <Widget
-                        dashboardApi={dashboardApi}
-                        registerWidgetApi={registerWidgetApi}
-                    />,
-                    document.getElementById('app-container')
-                );
-            }
-        });
         render(
             <Widget
                 dashboardApi={dashboardApi}
