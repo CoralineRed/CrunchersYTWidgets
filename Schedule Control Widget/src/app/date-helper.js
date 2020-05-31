@@ -23,9 +23,9 @@ export const getUtc = (date) => {
 
 
 export const periodsData = [
-    {label: "Сегодня", getPeriod: getTodayPeriod},
-    {label: "Вчера", getPeriod: getYesterdayPeriod},
-    {label: "Эта неделя", getPeriod: getCurrWeekPeriod}
+    {label: "Сегодня", getPeriod: getTodayPeriod, key: "Сегодня"},
+    {label: "Вчера", getPeriod: getYesterdayPeriod, key: "Вчера"},
+    {label: "Эта неделя", getPeriod: getCurrWeekPeriod, key: "Эта неделя"}
 ];
 export const getDateLabel = (fromDate, toDate) => {
     return `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
