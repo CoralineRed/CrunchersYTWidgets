@@ -166,7 +166,7 @@ export default class ReportWidget extends Component {
         const props = this.props;
         const alert = props.throwAlert("Идет подготовка отчета", Alert.Type.LOADING);
         const {chosenEmployees, availableEmployees} = this.state;
-        let reportEmployees = availableEmployees.filter(x => chosenEmployees.filter(y => y.label === x.label).length !== 0)
+        let reportEmployees = availableEmployees.filter(x => chosenEmployees.filter(y => y.label === x.label).length !== 0);
         getReportData(props.dashboardApi, {
             ...this.state,
             chosenEmployees: reportEmployees
