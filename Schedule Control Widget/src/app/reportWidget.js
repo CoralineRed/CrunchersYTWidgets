@@ -17,6 +17,9 @@ import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
 import Radio from "@jetbrains/ring-ui/components/radio/radio";
+import "./styles.css";
+import Tooltip from "@jetbrains/ring-ui/components/tooltip/tooltip";
+import {ChevronDownIcon, ChevronUpIcon, TimeIcon} from "@jetbrains/ring-ui/components/icon";
 
 
 export default class ReportWidget extends Component {
@@ -68,6 +71,8 @@ export default class ReportWidget extends Component {
             didMount: false,
             isReportForMyself: true,
             myEmployees: [],
+            timeOut: 5,
+            timeOuts: []
         };
     };
 
@@ -76,6 +81,7 @@ export default class ReportWidget extends Component {
         state.selectedPeriod = state.selectedPeriod ? state.selectedPeriod.label : null;
         state.isConfiguring = false;
         delete state.didMount;
+        delete state.timeOuts;
         await dashboardApi.storeConfig(state);
     };
     readState = async (dashboardApi) => {
@@ -109,10 +115,10 @@ export default class ReportWidget extends Component {
                     }).map(user => {
                         return {label: user.userEmail, key: user}
                     });
-                emails.push({
+                /*emails.push({
                     key: {fullName: "Бабин Константин", userEmail: "graf.rav@gmail.com", userLogin: "graf.rav"},
                     label: "babin@hightech.group"
-                })
+                })*/
                 this.setState({
                     myEmployees: emails.map(x => {
                         return {label: x.label, key: x.label}
@@ -180,9 +186,15 @@ export default class ReportWidget extends Component {
             props.throwAlert("в чеке", Alert.Type.ERROR);
             await this.props.dashboardApi.exitConfigMode();
         });
+        this.resetTimeOut()
+    };
+    resetTimeOut = () => {
+        this.state.timeOuts.forEach(value => clearTimeout(value));
+        this.setState({timeOuts: [setTimeout(() => !this.state.isConfiguring ? this.check() : this.resetTimeOut(), this.state.timeOut * 60 * 1000)]})
     };
     cancelConfig = async () => {
         this.setState({isConfiguring: false});
+        this.readState(this.props.dashboardApi);
         await this.props.dashboardApi.exitConfigMode();
     };
     onChangePeriod = (a, b) => {
@@ -220,17 +232,17 @@ export default class ReportWidget extends Component {
 
     onChangeProject = (a, b) => {
         this.setState({selectedProjects: a})
-    }
+    };
     deleteProject = (project) => this.setState({selectedProjects: this.state.selectedProjects.filter(selectedProject => selectedProject.key !== project.key)});
 
     onChangeWorkType = (a, b) => {
         this.setState({selectedWorkTypes: a})
-    }
+    };
     deleteWorkType = (workType) => this.setState({selectedWorkTypes: this.state.selectedWorkTypes.filter(selectWorkType => selectWorkType.label !== workType.label)});
 
     onChangeEmployee = (a, b) => {
         this.setState({chosenEmployees: a});
-    }
+    };
     unChoseEmployee = (label) => {
         const newChosen = this.state.chosenEmployees.filter(x => x.label !== label);
         this.setState({chosenEmployees: newChosen});
@@ -264,7 +276,7 @@ export default class ReportWidget extends Component {
     renderConfiguration() {
         const {
             title, issueFilter, chosenEmployees, projects,
-            selectedProjects, selectedPeriods, from, to, selectedWorkTypes, workTypes, isReportForMyself, isManagersWidget
+            selectedProjects, selectedPeriods, from, to, selectedWorkTypes, workTypes, isReportForMyself, isManagersWidget, timeOut
         } = this.state;
         this.props.dashboardApi.setTitle(title ?? this.DEFAULT_TITLE);
         return (
@@ -386,7 +398,8 @@ export default class ReportWidget extends Component {
                                                 chosenEmployees == false
                                                     ? <Text style={{color: "red"}}>{"Сотрудники не выбраны"}</Text>
                                                     : chosenEmployees.map(employee =>
-                                                        <Tag key={employee.key} onRemove={() => this.unChoseEmployee(employee.label)}>
+                                                        <Tag key={employee.key}
+                                                             onRemove={() => this.unChoseEmployee(employee.label)}>
                                                             {employee.label + " "}
                                                         </Tag>)
                                             }
@@ -401,6 +414,27 @@ export default class ReportWidget extends Component {
                     <Panel>
                         <Button primary disabled={!this.canCreate()} onClick={this.check}>{"Сохранить"}</Button>
                         <Button onClick={this.cancelConfig}>{'Отменить'}</Button>
+                        <span className={"refreshPeriod"} data-test="refresh-period-control">
+                            <Tooltip>
+                                <TimeIcon size={TimeIcon.Size.Size12}/>
+                                &nbsp;
+                                <span data-test="refresh-period-label">{timeOut} min</span>
+                            </Tooltip>
+                            <ChevronUpIcon
+                                onClick={() => this.setState({timeOut: timeOut + 1})}
+                                className={["button", "up"].join(' ')}
+                                size={ChevronUpIcon.Size.Size12}
+                                color={ChevronUpIcon.Color.BLUE}
+                                data-test="refresh-period-up"
+                            />
+                                <ChevronDownIcon
+                                    onClick={() => this.setState(timeOut === 1 ? {timeOut: timeOut} : {timeOut: timeOut - 1})}
+                                    className={["button", "down"].join(' ')}
+                                    size={ChevronDownIcon.Size.Size12}
+                                    color={ChevronDownIcon.Color.BLUE}
+                                    data-test="refresh-period-down"
+                                />
+                        </span>
                     </Panel>
                 </div>
             </div>
@@ -432,19 +466,19 @@ export default class ReportWidget extends Component {
                         <colgroup span="2"></colgroup>
                         <TableHead>
                             <TableRow>
-                                <TableCell rowSpan="2">{"Сотрудник"}</TableCell>
+                                <TableCell rowSpan="2"><b>{"Сотрудник"}</b></TableCell>
                                 {
                                     reportData[0].periods.map(period =>
                                         <TableCell align={"center"} colSpan="2"
-                                                   scope="colgroup">{period.label}</TableCell>)
+                                                   scope="colgroup"><b>{period.label}</b></TableCell>)
                                 }
                             </TableRow>
                             <TableRow>
                                 {
-                                    reportData[0].periods.map(period =>
+                                    reportData[0].periods.map(() =>
                                         <>
-                                            <TableCell align={"center"} scope="col">{"План"}</TableCell>
-                                            <TableCell align={"center"} scope="col">{"Факт"}</TableCell>
+                                            <TableCell align={"center"} scope="col"><b>{"План"}</b></TableCell>
+                                            <TableCell align={"center"} scope="col"><b>{"Факт"}</b></TableCell>
                                         </>)
                                 }
                             </TableRow>
@@ -465,9 +499,9 @@ export default class ReportWidget extends Component {
                                 <TableCell rowSpan="2"><b>{"Итого:"}</b></TableCell>
                                 {resultFactPlans.map(period =>
                                     <>
-                                        <TableCell align={"center"} scope="col">{period.sumPlan ?? 0}</TableCell>
+                                        <TableCell align={"center"} scope="col"><b>{period.sumPlan ?? 0}</b></TableCell>
                                         <TableCell align={"center"} scope="col"
-                                                   style={{color: period.sumFact < period.sumPlan || !period.sumFact ? "red" : "green"}}>{period.sumFact ? Math.round(period.sumFact) : 0}</TableCell>
+                                                   style={{color: period.sumFact < period.sumPlan || !period.sumFact ? "red" : "green"}}><b>{period.sumFact ? Math.round(period.sumFact) : 0}</b></TableCell>
                                     </>)
                                 }
                             </TableRow>

@@ -1,0 +1,36 @@
+
+.button {
+    cursor: pointer;
+}
+
+.button:hover {
+    color: var(--ring-link-hover-color);
+}
+
+.up {
+    position: relative;
+    top: -4px;
+    right: -2px;
+}
+
+.down {
+    position: relative;
+    bottom: -4px;
+    left: -8px;
+}
+
+.refreshPeriod {
+    float: right;
+
+    margin-top: 7px;
+    margin-right: 4px;
+
+    cursor: default;
+    user-select: none;
+    white-space: nowrap;
+
+    color: var(--ring-dark-secondary-color);
+
+    font-size: var(--ring-font-size-smaller);
+    line-height: 10px;
+}
