@@ -20,6 +20,7 @@ import Radio from "@jetbrains/ring-ui/components/radio/radio";
 import "./styles.css";
 import Tooltip from "@jetbrains/ring-ui/components/tooltip/tooltip";
 import {ChevronDownIcon, ChevronUpIcon, TimeIcon} from "@jetbrains/ring-ui/components/icon";
+import ButtonGroup from "@jetbrains/ring-ui/components/button-group/button-group";
 
 
 export default class ReportWidget extends Component {
@@ -225,6 +226,9 @@ export default class ReportWidget extends Component {
         }
     };
     deletePeriod = (period) => this.setState({selectedPeriods: this.state.selectedPeriods.filter(selectedPeriod => selectedPeriod.label !== period.label)});
+    changePeriodState = (period) => {
+        this.setState({selectedPeriods: this.state.selectedPeriods.filter(selectedPeriod => selectedPeriod.label !== period.label)});
+    }
 
     projectMultipleConfig = {selectAll: true};
     workTypeMultipleConfig = {selectAll: true};
@@ -370,6 +374,20 @@ export default class ReportWidget extends Component {
                                             </Tag>)
                                 }
                             </Group>
+                            {
+                                selectedPeriods == false
+                                    ? <Text style={{color: "red"}}>{"Выберите период"}</Text>
+                                    :
+                                    <ButtonGroup>
+                                        {
+                                            periodsData.map(period =>
+                                                <Button key={period.key} onRemove={() => this.changePeriodState(period)}
+                                                        active={selectedPeriods.filter(x => x.label === period.label).length !== 0}>
+                                                    {period.label + " "}
+                                                </Button>)
+                                        }
+                                    </ButtonGroup>
+                            }
                         </div>
                     </Content>
                     <Content>
