@@ -32,11 +32,11 @@ namespace ProductionControlWidgetServer.Controllers
         public async Task<IActionResult> Periods([FromBody] WidgetRequestModel request)
         {
             var widgetOperations = new WidgetOperations(_hubConnection, _oneCConnection);
-            
+            var myEmail = await widgetOperations.GetUserEmail(request.UserId);
             return Ok(await widgetOperations.Api1CRequest(
                 await widgetOperations.IsManager(request.UserId)
                     ? request.Emails
-                    : new[] {await widgetOperations.GetUserEmail(request.UserId)},
+                    : request.Emails.Where(x=>x==myEmail).ToArray(),
                 request.Periods));
         }
     }
