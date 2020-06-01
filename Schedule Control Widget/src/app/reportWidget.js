@@ -1,10 +1,8 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import {Button, ButtonGroup, DatePicker, Group, Panel, Text} from "@jetbrains/ring-ui";
+import {Button, DatePicker, Group, Panel, Tag, Text} from "@jetbrains/ring-ui";
 import Select from '@jetbrains/ring-ui/components/select/select';
-import Island, {Header, Content} from "@jetbrains/ring-ui/components/island/island";
-import closeIcon from '@jetbrains/icons/close.svg';
-import Icon from "@jetbrains/ring-ui/components/icon";
+import {Content} from "@jetbrains/ring-ui/components/island/island";
 import {getReportData} from "./api-interaction";
 import {getDateLabel, getFromToDateObj, getPeriodsArray, periodsData} from "./date-helper";
 import QueryAssist from "@jetbrains/ring-ui/components/query-assist/query-assist";
@@ -19,7 +17,6 @@ import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
 import Radio from "@jetbrains/ring-ui/components/radio/radio";
-import Badge from "@jetbrains/ring-ui/components/badge/badge";
 
 
 export default class ReportWidget extends Component {
@@ -305,11 +302,9 @@ export default class ReportWidget extends Component {
                                     selectedWorkTypes == false
                                         ? <Text>{"или все worktype будут рассмотрены"}</Text>
                                         : selectedWorkTypes.map(workType =>
-                                            <Badge key={workType.key}>
+                                            <Tag key={workType.key} onRemove={() => this.deleteWorkType(workType)}>
                                                 {workType.label + " "}
-                                                <Icon className="ring-icon" glyph={closeIcon}
-                                                      onClick={() => this.deleteWorkType(workType)}/>
-                                            </Badge>)
+                                            </Tag>)
                                 }
                             </Group>
                         </div>
@@ -329,11 +324,9 @@ export default class ReportWidget extends Component {
                                     selectedProjects == false
                                         ? <Text>{"или Issue из всех проектов будут рассмотрены"}</Text>
                                         : selectedProjects.map(project =>
-                                            <Badge key={project.key}>
+                                            <Tag key={project.key} onRemove={() => this.deleteProject(project)}>
                                                 {project.label + " "}
-                                                <Icon className="ring-icon" glyph={closeIcon}
-                                                      onClick={() => this.deleteProject(project)}/>
-                                            </Badge>)
+                                            </Tag>)
                                 }
                             </Group>
                         </div>
@@ -359,11 +352,9 @@ export default class ReportWidget extends Component {
                                     selectedPeriods == false
                                         ? <Text style={{color: "red"}}>{"Выберите период"}</Text>
                                         : selectedPeriods.map(period =>
-                                            <Badge key={period.key}>
+                                            <Tag key={period.key} onRemove={() => this.deletePeriod(period)}>
                                                 {period.label + " "}
-                                                <Icon className="ring-icon" glyph={closeIcon}
-                                                      onClick={() => this.deletePeriod(period)}/>
-                                            </Badge>)
+                                            </Tag>)
                                 }
                             </Group>
                         </div>
@@ -395,11 +386,9 @@ export default class ReportWidget extends Component {
                                                 chosenEmployees == false
                                                     ? <Text style={{color: "red"}}>{"Сотрудники не выбраны"}</Text>
                                                     : chosenEmployees.map(employee =>
-                                                        <Badge key={employee.key}>
+                                                        <Tag key={employee.key} onRemove={() => this.unChoseEmployee(employee.label)}>
                                                             {employee.label + " "}
-                                                            <Icon className="ring-icon" glyph={closeIcon}
-                                                                  onClick={() => this.unChoseEmployee(employee.label)}/>
-                                                        </Badge>)
+                                                        </Tag>)
                                             }
                                         </Group>
                                     </div>
