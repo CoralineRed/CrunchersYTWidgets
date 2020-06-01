@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {Button, ButtonGroup, DatePicker, Group, Panel, Text} from "@jetbrains/ring-ui";
 import Select from '@jetbrains/ring-ui/components/select/select';
 import Island, {Header, Content} from "@jetbrains/ring-ui/components/island/island";
-import trashIcon from '@jetbrains/icons/trash.svg';
+import closeIcon from '@jetbrains/icons/close.svg';
 import Icon from "@jetbrains/ring-ui/components/icon";
 import {getReportData} from "./api-interaction";
 import {getDateLabel, getFromToDateObj, getPeriodsArray, periodsData} from "./date-helper";
@@ -19,6 +19,7 @@ import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
 import Radio from "@jetbrains/ring-ui/components/radio/radio";
+import Badge from "@jetbrains/ring-ui/components/badge/badge";
 
 
 export default class ReportWidget extends Component {
@@ -52,27 +53,24 @@ export default class ReportWidget extends Component {
 
         this.state = {
             chosenEmployees: [],
-            selectedEmployee: null,
             availableEmployees: null,
             reportData: [],
             projects: [],
-            selectedProject: null,
             selectedProjects: [],
-            selectedPeriod: null,
             selectedPeriods: [],
             from: null,
             to: null,
             serviceId: null,
             workTypes: [],
             selectedWorkTypes: [],
-            selectedWorkType: null,
             isConfiguring: false,
             isExistingWidget: props.isExistingWidget,
             isManagersWidget: props.isManagersWidget,
             calculatedTime: Date.now(),
             isRefreshing: false,
             didMount: false,
-            isReportForMyself: true
+            isReportForMyself: true,
+            myEmployees: [],
         };
     };
 
@@ -118,6 +116,11 @@ export default class ReportWidget extends Component {
                     key: {fullName: "Бабин Константин", userEmail: "graf.rav@gmail.com", userLogin: "graf.rav"},
                     label: "babin@hightech.group"
                 })
+                this.setState({
+                    myEmployees: emails.map(x => {
+                        return {label: x.label, key: x.label}
+                    })
+                })
                 this.setState({availableEmployees: emails})
             }).then(
             props.dashboardApi.fetch(serviceId, "rest/project/all").then(async returnedProjects => {
@@ -159,7 +162,12 @@ export default class ReportWidget extends Component {
     check = () => {
         const props = this.props;
         const alert = props.throwAlert("Идет подготовка отчета", Alert.Type.LOADING);
-        getReportData(props.dashboardApi, {...this.state}, props.userId, props.throwAlert)
+        const {chosenEmployees, availableEmployees} = this.state;
+        let reportEmployees = availableEmployees.filter(x => chosenEmployees.filter(y => y.label === x.label).length !== 0)
+        getReportData(props.dashboardApi, {
+            ...this.state,
+            chosenEmployees: reportEmployees
+        }, props.userId, props.throwAlert)
             .then(async reportData => {
                     props.closeAlert(alert);
                     await this.saveState(props.dashboardApi, {...this.state, isExistingWidget: true, isConfiguring: false});
@@ -172,7 +180,7 @@ export default class ReportWidget extends Component {
                 }
             ).catch(async err => {
             this.setState({isConfiguring: false});
-            props.throwAlert("в чеке", Alert.Type.ERROR)
+            props.throwAlert("в чеке", Alert.Type.ERROR);
             await this.props.dashboardApi.exitConfigMode();
         });
     };
@@ -180,21 +188,10 @@ export default class ReportWidget extends Component {
         this.setState({isConfiguring: false});
         await this.props.dashboardApi.exitConfigMode();
     };
-    selectPeriod = selectedPeriod => {
-        this.setState({selectedPeriod});
-        this.addPeriod(selectedPeriod);
-    };
-    addPeriod = period => {
-        const {selectedPeriods} = this.state;
-        if (!period) {
-            return
-        }
-        if (!selectedPeriods.filter(selectedPeriod => selectedPeriod.label === period.label)[0]) {
-            selectedPeriods.push(period);
-            this.setState({selectedPeriods});
-        } else {
-
-        }
+    onChangePeriod = (a, b) => {
+        const constData = this.state.selectedPeriods.filter(x => periodsData.filter(y => y.label === x.label).length === 0);
+        a = a.concat(constData);
+        this.setState({selectedPeriods: a});
     };
     setRange = ({from, to}) => {
         this.setState({from, to});
@@ -202,70 +199,41 @@ export default class ReportWidget extends Component {
             let fromDate = new Date(from);
             let toDate = new Date(to);
             this.setState({from: null, to: null});
-            this.addPeriod({
+
+            const period = {
                 label: getDateLabel(fromDate, toDate),
                 getPeriod: () => getFromToDateObj(fromDate, toDate)
-            })
+            };
+            const {selectedPeriods} = this.state;
+            if (!period) {
+                return
+            }
+            if (!selectedPeriods.filter(selectedPeriod => selectedPeriod.label === period.label)[0]) {
+                selectedPeriods.push(period);
+                this.setState({selectedPeriods});
+            }
         }
-
     };
     deletePeriod = (period) => this.setState({selectedPeriods: this.state.selectedPeriods.filter(selectedPeriod => selectedPeriod.label !== period.label)});
 
-    selectProject = selectedProject => {
-        this.setState({selectedProject});
-        const {selectedProjects} = this.state;
-        if (!selectedProject) {
-            return
-        }
-        if (!selectedProjects.filter(project => project.key === selectedProject.key)[0]) {
-            selectedProjects.push(selectedProject);
-            this.setState({selectedProjects});
-        } else {
+    projectMultipleConfig = {selectAll: true};
+    workTypeMultipleConfig = {selectAll: true};
+    periodMultipleConfig = {selectAll: true};
+    employeeMultipleConfig = {selectAll: true};
 
-        }
-    };
-    onSelectProject = (a, b) => {
-        console.log("onSelect", a, b)
-    }
-    onDeselectProject = (a, b) => {
-        console.log("onDeselect", a, b)
-    }
     onChangeProject = (a, b) => {
-        if (b === undefined) {
-
-        } else {
-            this.setState({selectedProjects: a})
-        }
-
-        console.log("onChange", a, b)
+        this.setState({selectedProjects: a})
     }
     deleteProject = (project) => this.setState({selectedProjects: this.state.selectedProjects.filter(selectedProject => selectedProject.key !== project.key)});
 
-    selectWorkType = selectedWorkType => {
-        this.setState({selectedWorkType});
-        const {selectedWorkTypes} = this.state;
-        if (!selectedWorkType) {
-            return
-        }
-        if (!selectedWorkTypes.filter(workType => workType.label === selectedWorkType.label)[0]) {
-            selectedWorkTypes.push(selectedWorkType);
-            this.setState({selectedWorkTypes});
-        } else {
-
-        }
-    };
+    onChangeWorkType = (a, b) => {
+        this.setState({selectedWorkTypes: a})
+    }
     deleteWorkType = (workType) => this.setState({selectedWorkTypes: this.state.selectedWorkTypes.filter(selectWorkType => selectWorkType.label !== workType.label)});
-    selectEmployee = selectedEmployee => {
-        this.setState({selectedEmployee});
-        const {chosenEmployees} = this.state;
-        if (!selectedEmployee) {
-            return;
-        }
-        if (!chosenEmployees.filter(chosenEmployee => chosenEmployee.label === selectedEmployee.label)[0]) {
-            chosenEmployees.push(selectedEmployee);
-            this.setState({chosenEmployees});
-        }
-    };
+
+    onChangeEmployee = (a, b) => {
+        this.setState({chosenEmployees: a});
+    }
     unChoseEmployee = (label) => {
         const newChosen = this.state.chosenEmployees.filter(x => x.label !== label);
         this.setState({chosenEmployees: newChosen});
@@ -298,8 +266,8 @@ export default class ReportWidget extends Component {
 
     renderConfiguration() {
         const {
-            title, issueFilter, chosenEmployees, selectedEmployee, availableEmployees, projects,
-            selectedProject, selectedProjects, selectedPeriod, selectedPeriods, from, to, selectedWorkType, selectedWorkTypes, workTypes, isReportForMyself, isManagersWidget
+            title, issueFilter, chosenEmployees, projects,
+            selectedProjects, selectedPeriods, from, to, selectedWorkTypes, workTypes, isReportForMyself, isManagersWidget
         } = this.state;
         this.props.dashboardApi.setTitle(title ?? this.DEFAULT_TITLE);
         return (
@@ -328,68 +296,44 @@ export default class ReportWidget extends Component {
                             <Group>
                                 <Select
                                     filter
-                                    label={"Выберите worktype"}
-                                    onChange={this.selectWorkType}
-                                    selected={selectedWorkType}
+                                    multiple={this.workTypeMultipleConfig}
+                                    selected={selectedWorkTypes}
                                     data={workTypes}
+                                    onChange={this.onChangeWorkType}
                                 />
                                 {
-                                    selectedWorkTypes == false ?
-                                        <Text>{"или все worktype будут рассмотрены"}</Text>
-                                        : <ButtonGroup>
-                                            {
-                                                selectedWorkTypes.map(workType =>
-                                                    <Button key={workType.key}
-                                                            onClick={() => this.deleteWorkType(workType)}>
-                                                        {workType.label + " "}<Icon
-                                                        glyph={trashIcon}
-                                                        className="ring-icon"
-                                                        color={Icon.Color.RED}
-                                                    />
-                                                    </Button>)
-                                            }
-                                        </ButtonGroup>
+                                    selectedWorkTypes == false
+                                        ? <Text>{"или все worktype будут рассмотрены"}</Text>
+                                        : selectedWorkTypes.map(workType =>
+                                            <Badge key={workType.key}>
+                                                {workType.label + " "}
+                                                <Icon className="ring-icon" glyph={closeIcon}
+                                                      onClick={() => this.deleteWorkType(workType)}/>
+                                            </Badge>)
                                 }
                             </Group>
                         </div>
                     </Content>
-
                     <Content>
                         <strong>{"Выбор проекта:"}</strong>
                         <div>
                             <Group>
                                 <Select
                                     filter
-                                    multiple={{selectAll: true}}
+                                    multiple={this.projectMultipleConfig}
                                     selected={selectedProjects}
                                     data={projects}
-                                    onSelect={this.onSelectProject}
-                                    onDeselect={this.onDeselectProject}
                                     onChange={this.onChangeProject}
                                 />
-                                <Select
-                                    filter
-                                    label={"Выберите проект"}
-                                    onChange={this.selectProject}
-                                    selected={selectedProject}
-                                    data={projects}
-                                />
                                 {
-                                    selectedProjects == false ?
-                                        <Text>{"или Issue из всех проектов будут рассмотрены"}</Text>
-                                        : <ButtonGroup>
-                                            {
-                                                selectedProjects.map(project =>
-                                                    <Button key={project.key}
-                                                            onClick={() => this.deleteProject(project)}>
-                                                        {project.label + " "}<Icon
-                                                        glyph={trashIcon}
-                                                        className="ring-icon"
-                                                        color={Icon.Color.RED}
-                                                    />
-                                                    </Button>)
-                                            }
-                                        </ButtonGroup>
+                                    selectedProjects == false
+                                        ? <Text>{"или Issue из всех проектов будут рассмотрены"}</Text>
+                                        : selectedProjects.map(project =>
+                                            <Badge key={project.key}>
+                                                {project.label + " "}
+                                                <Icon className="ring-icon" glyph={closeIcon}
+                                                      onClick={() => this.deleteProject(project)}/>
+                                            </Badge>)
                                 }
                             </Group>
                         </div>
@@ -399,10 +343,11 @@ export default class ReportWidget extends Component {
                         <div>
                             <Group>
                                 <Select
+                                    filter
+                                    multiple={this.periodMultipleConfig}
+                                    selected={selectedPeriods.filter(x => periodsData.filter(y => y.label === x.label).length !== 0)}
                                     data={periodsData}
-                                    label={"Периоды"}
-                                    selected={selectedPeriod}
-                                    onChange={this.selectPeriod}
+                                    onChange={this.onChangePeriod}
                                 />
                                 <Text>{"Или"}</Text>
                                 <DatePicker
@@ -410,28 +355,17 @@ export default class ReportWidget extends Component {
                                     onChange={this.setRange}
                                     range
                                 />
+                                {
+                                    selectedPeriods == false
+                                        ? <Text style={{color: "red"}}>{"Выберите период"}</Text>
+                                        : selectedPeriods.map(period =>
+                                            <Badge key={period.key}>
+                                                {period.label + " "}
+                                                <Icon className="ring-icon" glyph={closeIcon}
+                                                      onClick={() => this.deletePeriod(period)}/>
+                                            </Badge>)
+                                }
                             </Group>
-                        </div>
-                        <br/>
-                        <div>
-                            {
-                                selectedPeriods == false ?
-                                    <Text style={{color: "red"}}>{"Выберите период"}</Text>
-                                    : <ButtonGroup>
-                                        {
-                                            selectedPeriods.map(period =>
-                                                <Button key={period.label}
-                                                        onClick={() => this.deletePeriod(period)}>
-                                                    {period.label + " "}<Icon
-                                                    glyph={trashIcon}
-                                                    className="ring-icon"
-                                                    color={Icon.Color.RED}
-                                                />
-                                                </Button>
-                                            )
-                                        }
-                                    </ButtonGroup>
-                            }
                         </div>
                     </Content>
                     <Content>
@@ -452,40 +386,25 @@ export default class ReportWidget extends Component {
                                         <Group>
                                             <Select
                                                 filter
-                                                label={"Выберите сотрудника"}
-                                                data={availableEmployees}
-                                                selected={selectedEmployee}
-                                                onChange={this.selectEmployee}
+                                                multiple={this.employeeMultipleConfig}
+                                                selected={chosenEmployees}
+                                                data={this.state.myEmployees}
+                                                onChange={this.onChangeEmployee}
                                             />
+                                            {
+                                                chosenEmployees == false
+                                                    ? <Text style={{color: "red"}}>{"Сотрудники не выбраны"}</Text>
+                                                    : chosenEmployees.map(employee =>
+                                                        <Badge key={employee.key}>
+                                                            {employee.label + " "}
+                                                            <Icon className="ring-icon" glyph={closeIcon}
+                                                                  onClick={() => this.unChoseEmployee(employee.label)}/>
+                                                        </Badge>)
+                                            }
                                         </Group>
-
-                                    </div>
-                                    <div>
-                                        <br/>
-                                        {
-                                            chosenEmployees == false
-                                                ? <Text style={{color: "red"}}>{"Сотрудники не выбраны"}</Text>
-                                                : <ButtonGroup>
-                                                    {
-                                                        chosenEmployees.map(employee =>
-                                                            <Button key={employee.label}
-                                                                    onClick={() => this.unChoseEmployee(employee.label)}>
-                                                                {employee.label + " "}<Icon
-                                                                glyph={trashIcon}
-                                                                className="ring-icon"
-                                                                color={Icon.Color.RED}
-                                                            />
-                                                            </Button>
-                                                        )
-                                                    }
-                                                </ButtonGroup>
-                                        }
                                     </div>
                                 </div>
-                                :
-                                <div>
-
-                                </div>
+                                : <></>
                         }
 
 
@@ -501,7 +420,7 @@ export default class ReportWidget extends Component {
 
     render() {
         const {
-            reportData, isConfiguring, isExistingWidget, chosenEmployees, selectedPeriods, calculatedTime, didMount
+            reportData, isConfiguring, isExistingWidget, calculatedTime, didMount
         } = this.state;
         console.log(this.state, this.props, isExistingWidget);
         if (!didMount) {
@@ -518,7 +437,7 @@ export default class ReportWidget extends Component {
         return (
             <div>
                 <Text info>{`Report was calculated in ${new Date(calculatedTime).toLocaleString()}`}</Text>
-                
+
                 <TableContainer component={Paper}>
                     <Table size="small" aria-label="simple table">
                         <colgroup span="2"></colgroup>
