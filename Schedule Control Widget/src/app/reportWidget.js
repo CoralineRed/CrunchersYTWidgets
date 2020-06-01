@@ -310,6 +310,7 @@ export default class ReportWidget extends Component {
                                     selected={selectedWorkTypes}
                                     data={workTypes}
                                     onChange={this.onChangeWorkType}
+                                    label={"Выбрать worktype"}
                                 />
                                 {
                                     selectedWorkTypes == false
@@ -332,6 +333,7 @@ export default class ReportWidget extends Component {
                                     selected={selectedProjects}
                                     data={projects}
                                     onChange={this.onChangeProject}
+                                    label={"Выбрать проект"}
                                 />
                                 {
                                     selectedProjects == false
@@ -354,6 +356,7 @@ export default class ReportWidget extends Component {
                                     selected={selectedPeriods.filter(x => periodsData.filter(y => y.label === x.label).length !== 0)}
                                     data={periodsData}
                                     onChange={this.onChangePeriod}
+                                    label={"Выбрать период"}
                                 />
                                 <Text>{"Или"}</Text>
                                 <DatePicker
@@ -394,6 +397,7 @@ export default class ReportWidget extends Component {
                                                 selected={chosenEmployees}
                                                 data={this.state.myEmployees}
                                                 onChange={this.onChangeEmployee}
+                                                label={"Выбрать сотрудника"}
                                             />
                                             {
                                                 chosenEmployees == false
