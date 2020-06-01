@@ -182,6 +182,7 @@ export default class ReportWidget extends Component {
                     await this.props.dashboardApi.exitConfigMode();
                 }
             ).catch(async err => {
+            props.closeAlert(alert);
             this.setState({isConfiguring: false});
             props.throwAlert("в чеке", Alert.Type.ERROR);
             await this.props.dashboardApi.exitConfigMode();
