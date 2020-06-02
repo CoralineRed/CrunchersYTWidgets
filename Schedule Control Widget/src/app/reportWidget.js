@@ -258,6 +258,7 @@ export default class ReportWidget extends Component {
                 fields: `query,caret,styleRanges(length,start,style,title),suggestions(auxiliaryIcon,caret,className,completionEnd,completionStart,description,group,icon,matchingEnd,matchingStart,option,prefix,suffix)`
             }
         };
+        this.setState({issueFilter: params.query.query});
         return this.props.dashboardApi.fetch(`${serviceId}`, `api/search/assist?$top=-1&fields=${params.query.fields}`, {
             method: "POST",
             body: {
