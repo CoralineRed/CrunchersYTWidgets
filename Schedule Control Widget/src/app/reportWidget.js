@@ -21,7 +21,6 @@ import "./styles.css";
 import Tooltip from "@jetbrains/ring-ui/components/tooltip/tooltip";
 import {ChevronDownIcon, ChevronUpIcon, TimeIcon} from "@jetbrains/ring-ui/components/icon";
 
-
 export default class ReportWidget extends Component {
     static propTypes = {
         dashboardApi: PropTypes.object,
@@ -145,7 +144,7 @@ export default class ReportWidget extends Component {
 
     canCreate = () => {
         const {chosenEmployees, selectedPeriods, isReportForMyself} = this.state;
-        return (chosenEmployees.length !== 0 && selectedPeriods.length !== 0 || selectedPeriods.length !== 0 && isReportForMyself) && selectedPeriods.length<=this.maxPeriodAmount
+        return (chosenEmployees.length !== 0 && selectedPeriods.length !== 0 || selectedPeriods.length !== 0 && isReportForMyself) && selectedPeriods.length <= this.maxPeriodAmount
     };
     getSumByPeriod = (period) => {
         const {reportData} = this.state;
@@ -300,6 +299,7 @@ export default class ReportWidget extends Component {
                             focus
                             query={issueFilter}
                             dataSource={this.dataSource}
+                            onClear={() => this.setState({issueFilter: ""})}
                         />
                     </Content>
                     <Content>
@@ -370,14 +370,15 @@ export default class ReportWidget extends Component {
                                     selectedPeriods == false
                                         ? <Text style={{color: "red"}}>{"Выберите период"}</Text>
                                         : selectedPeriods.map((period, index) =>
-                                            <Tag disabled={index > this.maxPeriodAmount-1} key={period.key}
+                                            <Tag disabled={index > this.maxPeriodAmount - 1} key={period.key}
                                                  onRemove={() => this.deletePeriod(period)}>
                                                 {period.label + " "}
                                             </Tag>)
                                 }
                                 {
                                     selectedPeriods.length > this.maxPeriodAmount ?
-                                        <Text style={{color: "red"}}>{`Количество периодов превышает ${this.maxPeriodAmount}`}</Text> :
+                                        <Text
+                                            style={{color: "red"}}>{`Количество периодов превышает ${this.maxPeriodAmount}`}</Text> :
                                         <Text info>{`Максимум ${this.maxPeriodAmount} периодов`}</Text>
                                 }
                             </Group>
@@ -458,7 +459,7 @@ export default class ReportWidget extends Component {
         const {
             reportData, isConfiguring, isExistingWidget, calculatedTime, didMount
         } = this.state;
-        console.log(this.state, this.props, isExistingWidget);
+        //console.log(this.state, this.props, isExistingWidget);
         if (!didMount) {
             return (<text>{"loading..."}</text>)
         }
@@ -504,7 +505,7 @@ export default class ReportWidget extends Component {
                                         <>
                                             <TableCell align={"center"}>{period.plan ?? 0}</TableCell>
                                             <TableCell align={"center"}
-                                                       style={{color: period.fact < period.plan || !period.fact ? "red" : "green"}}>{period.fact ? Math.round(period.fact) : 0}</TableCell>
+                                                       style={{color: !period.fact && 0 < period.plan || period.fact < period.plan ? "red" : "green"}}>{period.fact ? Math.round(period.fact) : 0}</TableCell>
                                         </>)
                                 }
                             </TableRow>)}
@@ -514,7 +515,7 @@ export default class ReportWidget extends Component {
                                     <>
                                         <TableCell align={"center"} scope="col"><b>{period.sumPlan ?? 0}</b></TableCell>
                                         <TableCell align={"center"} scope="col"
-                                                   style={{color: period.sumFact < period.sumPlan || !period.sumFact ? "red" : "green"}}><b>{period.sumFact ? Math.round(period.sumFact) : 0}</b></TableCell>
+                                                   style={{color: !period.sumFact && 0 < period.sumPlan || period.sumFact < period.sumPlan ? "red" : "green"}}><b>{period.sumFact ? Math.round(period.sumFact) : 0}</b></TableCell>
                                     </>)
                                 }
                             </TableRow>

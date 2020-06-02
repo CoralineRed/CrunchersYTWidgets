@@ -32,7 +32,7 @@ export default class Widget extends Component {
             if (config.isManagersWidget) {
                 this.setState({isManagersWidget: true})
             }
-            console.log("before set", config)
+            //console.log("before set", config)
             this.setState({isExistingWidget: true})
         }
 
