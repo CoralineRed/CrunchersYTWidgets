@@ -145,7 +145,7 @@ export default class ReportWidget extends Component {
 
     canCreate = () => {
         const {chosenEmployees, selectedPeriods, isReportForMyself} = this.state;
-        return chosenEmployees.length !== 0 && selectedPeriods.length !== 0 || selectedPeriods.length !== 0 && isReportForMyself
+        return (chosenEmployees.length !== 0 && selectedPeriods.length !== 0 || selectedPeriods.length !== 0 && isReportForMyself) && selectedPeriods.length<=this.maxPeriodAmount
     };
     getSumByPeriod = (period) => {
         const {reportData} = this.state;
@@ -230,6 +230,7 @@ export default class ReportWidget extends Component {
     workTypeMultipleConfig = {selectAll: true};
     periodMultipleConfig = {selectAll: true};
     employeeMultipleConfig = {selectAll: true};
+    maxPeriodAmount = 6;
 
     onChangeProject = (a, b) => {
         this.setState({selectedProjects: a})
@@ -367,10 +368,16 @@ export default class ReportWidget extends Component {
                                 {
                                     selectedPeriods == false
                                         ? <Text style={{color: "red"}}>{"Выберите период"}</Text>
-                                        : selectedPeriods.map(period =>
-                                            <Tag key={period.key} onRemove={() => this.deletePeriod(period)}>
+                                        : selectedPeriods.map((period, index) =>
+                                            <Tag disabled={index > this.maxPeriodAmount-1} key={period.key}
+                                                 onRemove={() => this.deletePeriod(period)}>
                                                 {period.label + " "}
                                             </Tag>)
+                                }
+                                {
+                                    selectedPeriods.length > this.maxPeriodAmount ?
+                                        <Text style={{color: "red"}}>{`Количество периодов превышает ${this.maxPeriodAmount}`}</Text> :
+                                        <Text info>{`Максимум ${this.maxPeriodAmount} периодов`}</Text>
                                 }
                             </Group>
                         </div>
