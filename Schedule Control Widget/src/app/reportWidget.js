@@ -37,18 +37,10 @@ export default class ReportWidget extends Component {
     constructor(props) {
         super(props);
 
-        if (props.isManager || !props.isExistingWidget && !props.isManagersWidget) {
-            props.registerWidgetApi({
-                onConfigure: () => this.setState({isConfiguring: true}),
-                onRefresh: () => this.check()
-            });
-        } else {
-            props.registerWidgetApi({
-                onRefresh: () => {
-                    this.check()
-                }
-            });
-        }
+        props.registerWidgetApi({
+            onConfigure: () => this.setState({isConfiguring: true}),
+            onRefresh: () => this.check()
+        });
 
         this.state = {
             chosenEmployees: [],
@@ -79,6 +71,7 @@ export default class ReportWidget extends Component {
         state.selectedPeriods = state.selectedPeriods.map(period => period.label);
         state.selectedPeriod = state.selectedPeriod ? state.selectedPeriod.label : null;
         state.isConfiguring = false;
+        delete state.reportData;
         delete state.didMount;
         delete state.timeOuts;
         await dashboardApi.storeConfig(state);
@@ -114,10 +107,6 @@ export default class ReportWidget extends Component {
                     }).map(user => {
                         return {label: user.userEmail, key: user}
                     });
-                /*emails.push({
-                    key: {fullName: "Бабин Константин", userEmail: "graf.rav@gmail.com", userLogin: "graf.rav"},
-                    label: "babin@hightech.group"
-                })*/
                 this.setState({
                     myEmployees: emails.map(x => {
                         return {label: x.label, key: x.label}
@@ -466,9 +455,14 @@ export default class ReportWidget extends Component {
         if (isConfiguring) {
             return this.renderConfiguration();
         }
-        if (!isExistingWidget || reportData.length === 0) {
+        if (!isExistingWidget) {
+            console.log(this.state, this.props, isExistingWidget);
             return (
                 <EmptyWidget message={"Для настройки виджета откройте пункт Edit..."} face={"(⌒‿⌒)"}/>)
+        }
+        if (reportData.length === 0){
+            return (
+                <EmptyWidget message={"Виджет настроен, но его данные для вас совсем не доступны"} face={"( T⌒T )"}/>)
         }
         const resultFactPlans = reportData[0].periods.map(period => this.getSumByPeriod(period));
         return (
