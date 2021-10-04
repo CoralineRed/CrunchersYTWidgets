@@ -310,13 +310,15 @@ class Widget extends Component {
     do {
       /*newAlerts.push({type: Alert.Type.WARNING, key: `${Date.now()}`, message: `${workItemDate}`});
       wstate.setState({alerts: newAlerts});*/
-      await dashboardApi.fetch(serviceId, `rest/issue/${issueId}/timetracking/workitem`, {
+      await dashboardApi.fetch(serviceId, `api/issues/${issueId}/timeTracking/workItems`, {
         method: 'POST',
         body: {
           date: Date.parse(workItemDate),
-          duration: minutesADay,
-          worktype: {
-            name: workType
+          duration: {
+            "minutes": minutesADay
+          },
+          type: {
+            id: workTypes.find(x => x.label === workType).key
           }
         }
       }).then(workItem => {
@@ -376,8 +378,8 @@ class Widget extends Component {
 DashboardAddons.registerWidget((dashboardApi, registerWidgetApi) => {
     dashboardApi.fetchHub('api/rest/services').then(response => {
       serviceId = response.services.filter(x => x.id !== '0-0-0-0-0')[0].id;
-      dashboardApi.fetch(serviceId, 'rest/admin/timetracking/worktype').then(response => workTypes = response.map(x => {
-        return {label: x.name, key: x.name}
+      dashboardApi.fetch(serviceId, 'api/admin/timeTrackingSettings/workItemTypes?fields=id,name').then(response => workTypes = response.map(x => {
+        return {label: x.name, key: x.id}
       }));
     });
 

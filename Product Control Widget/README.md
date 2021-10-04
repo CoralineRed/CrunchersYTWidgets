@@ -18,7 +18,7 @@ press the "Load unsafe scripts" button. Similar workarounds are available in oth
 Для установки виджета необходимо провести следующие дейсивия:
  - Если архив в папке `dist` отсутствует (отсутствует папка целиком) или изменился исходный код:
     - Если отсутствует папка `node_modules` необходимо выполнить команду `npm install`
-    - Запустить команду `npn run build` (сгенерируется папка dist)
+    - Запустить команду `npm run build` (сгенерируется папка dist)
     - Все содержимое папки добавить в zip-архив
  - На странице `https://<your_youtrack_instance>/youtrack/admin/hub/widgets` открыть окно добавления нового виджета и перенести туда zip-архив с production bundle.
  
